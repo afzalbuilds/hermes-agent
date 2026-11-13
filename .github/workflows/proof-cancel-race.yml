@@ -1,0 +1,37 @@
+name: proof-cancel-race-macos
+# TEMPORARY proof workflow (never merges): pi #11252 on hermes' LocalEnvironment, base vs head.
+on:
+  push:
+    branches: ['proof/cancel-race-macos']
+jobs:
+  ab:
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: [base, head]
+        runner: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: deps
+        timeout-minutes: 5
+        run: python -m pip install -q psutil pyyaml python-dotenv
+      - name: base tree
+        if: matrix.leg == 'base'
+        timeout-minutes: 2
+        run: git show origin/main:tools/environments/local.py > tools/environments/local.py && git diff --stat
+      - name: run
+        timeout-minutes: 15
+        env:
+          TRIALS: '180'
+          PARALLEL: '6'
+          HERMES_HOME: ${{ runner.temp }}/hh
+        run: |
+          mkdir -p "$HERMES_HOME"
+          python scripts/proof_cancel_race.py 2>&1 | tail -5
