@@ -16,12 +16,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - name: Set up locked Python
+        uses: ./.github/actions/setup-pm
         with:
-          python-version: '3.12'
-      - name: deps
-        timeout-minutes: 5
-        run: python -m pip install -q psutil pyyaml python-dotenv
+          packages: 'ripgrep'
+          extras: '[]'
+          test-environment: 'true'
       - name: base tree
         if: matrix.leg == 'base'
         timeout-minutes: 2
@@ -34,4 +34,4 @@ jobs:
           HERMES_HOME: ${{ runner.temp }}/hh
         run: |
           mkdir -p "$HERMES_HOME"
-          python scripts/proof_cancel_race.py 2>&1 | tail -5
+          scripts/run-in-hermes-env python3 scripts/proof_cancel_race.py 2>&1 | tail -5
